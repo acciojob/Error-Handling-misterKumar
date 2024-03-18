@@ -1,29 +1,33 @@
 const fs = require('fs');
-const csv = require('csv-parser');
 
-const csvFilePath = process.argv[2];
-const columnName = process.argv[3];
+function readAndParseJSON(filePath) {
+    try {
+        const jsonData = fs.readFileSync(filePath, 'utf8');
+        const parsedData = JSON.parse(jsonData);
 
-let sum = 0;
-let count = 0;
+        if (typeof parsedData.name === 'undefined' || typeof parsedData.age === 'undefined') {
+            console.log("Missing required data in the JSON file.");
+            return;
+        }
 
-fs.createReadStream(csvFilePath)
-  .pipe(csv())
-  .on('data', (data) => {
-    const value = Number(data[columnName]);
-    if (!isNaN(value)) {
-      sum += value;
-      count++;
+        console.log(JSON.stringify(parsedData));
+    } catch (error) {
+        if (error instanceof SyntaxError) {
+            console.log("Invalid JSON file format. Please provide a valid JSON file.");
+        } else {
+            console.log(`Error reading the file: ${error.message}`);
+        }
     }
-  })
-  .on('end', () => {
-    if (count > 0) {
-      const average = sum / count;
-      console.log(`The average value of ${columnName} is: ${average}`);
-    } else {
-      console.log(`No valid values found in the ${columnName} column.`);
+}
+
+
+if (require.main === module) {
+    const filePath = process.argv[2];
+    if (!filePath) {
+        console.log("Please provide a JSON file path.");
+        return;
     }
-  })
-  .on('error', (err) => {
-    console.error(`Error reading CSV file: ${err}`);
-  });
+    readAndParseJSON(filePath);
+}
+
+module.exports = { readAndParseJSON };
