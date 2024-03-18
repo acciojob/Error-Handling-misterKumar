@@ -1,40 +1,50 @@
 const fs = require('fs');
-const csv = require('csv-parser');
 
-// Accept command-line arguments for CSV file path and column name
-const csvFilePath = process.argv[2];
-const columnName = process.argv[3];
-
-// Check if both arguments are provided
-if (!csvFilePath || !columnName) {
-  console.error('Please provide the path to the CSV file and the column name.');
+// Check if the right number of arguments are passed
+if (process.argv.length !== 4) {
+  console.error('Usage: node average-csv.js <path-to-csv> <column-name>');
   process.exit(1);
 }
 
-let sum = 0;
-let count = 0;
+const filePath = process.argv[2];
+const columnName = process.argv[3];
 
 // Read the CSV file
-fs.createReadStream(csvFilePath)
-  .pipe(csv())
-  .on('data', (data) => {
-    // Parse data and calculate the sum of the specified column
-    const value = Number(data[columnName]);
+fs.readFile(filePath, 'utf8', (err, data) => {
+  if (err) {
+    console.error(`Error: ${err.message}`);
+    process.exit(1);
+  }
+
+  const lines = data.trim().split('\n');
+  const header = lines[0].split(',');
+
+  // Check if the column name exists
+  const columnIndex = header.indexOf(columnName);
+  if (columnIndex === -1) {
+    console.log(`No valid values found in the ${columnName} column.`);
+    process.exit(0);
+  }
+
+  let sum = 0;
+  let count = 0;
+
+  // Calculate the average
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',');
+    const value = parseFloat(values[columnIndex]);
+
     if (!isNaN(value)) {
       sum += value;
       count++;
     }
-  })
-  .on('end', () => {
-    // Calculate the average value and print it to the console
-    if (count > 0) {
-      const average = sum / count;
-      console.log(`The average value of ${columnName} is: ${average}`);
-    } else {
-      console.log(`No valid values found in the ${columnName} column.`);
-    }
-  })
-  .on('error', (err) => {
-    // Handle errors during file reading
-    console.error(`Error reading CSV file: ${err}`);
-  });
+  }
+
+  if (count === 0) {
+    console.log(`No valid values found in the ${columnName} column.`);
+    process.exit(0);
+  }
+
+  const average = sum / count;
+  console.log(`The average value of ${columnName} is: ${average}`);
+});
